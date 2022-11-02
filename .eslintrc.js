@@ -24,5 +24,6 @@ module.exports = {
   plugins: ["react", "@typescript-eslint", "jest", "import"],
   rules: {
     "prettier/prettier": ["error", { endOfLine: "lf", singleQuote: false, printWidth: 120 }],
+    "@typescript-eslint/no-use-before-define": "off",
   }
 }
