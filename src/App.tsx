@@ -1,4 +1,5 @@
 import styled from "@emotion/styled";
+import { Box, TextField } from "@mui/material";
 import { useState } from "react";
 
 function App() {
@@ -15,12 +16,17 @@ function App() {
     <Main>
       <img src="/dog.png" />
       <Title>Insert your command</Title>
-      <div>Mock audio input</div>
+      <Box sx={{ width: "500px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+        <button>Record</button>
+        <input type="file" accept="audio/*" />
+        <button>Translate to text</button>
+      </Box>
       <StyledForm onSubmit={onSubmit}>
-        <TextInput
-          type="text"
-          name="query"
-          placeholder="Enter your query"
+        <TextField
+          label="Query"
+          sx={{ marginY: "20px" }}
+          multiline
+          maxRows={4}
           value={textQuery}
           onChange={(e) => setTextQuery(e.target.value)}
         />
@@ -49,7 +55,7 @@ const Title = styled("h3")({
 const StyledForm = styled("form")({
   display: "flex",
   flexDirection: "column",
-  width: "320px",
+  width: "500px",
 });
 
 const StyledInput = styled("input")({
@@ -60,13 +66,6 @@ const StyledInput = styled("input")({
     color: "#8e8ea0",
     opacity: 1,
   },
-});
-
-const TextInput = styled(StyledInput)({
-  padding: "12px 16px",
-  border: "1px solid #10a37f",
-  borderRadius: "4px",
-  marginBottom: "24px",
 });
 
 const SubmitInput = styled(StyledInput)({
