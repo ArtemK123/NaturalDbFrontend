@@ -1,15 +1,20 @@
 import styled from "@emotion/styled";
 import { Box, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function App() {
   const [textQuery, setTextQuery] = useState("");
   const [result, setResult] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
 
-  useEffect(() => {
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setResult("Your query is: " + textQuery);
+    setTextQuery("");
+  }
+
+  function startRecording() {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       const newMediaRecorder = new MediaRecorder(stream);
 
@@ -23,25 +28,14 @@ function App() {
       });
 
       setMediaRecorder(newMediaRecorder);
+      setAudioBlob(undefined);
+      newMediaRecorder.start();
     });
-  }, []);
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setResult("Your query is: " + textQuery);
-    setTextQuery("");
-  }
-
-  function startRecording() {
-    if (!mediaRecorder) return;
-    setIsRecording(true);
-    setAudioBlob(undefined);
-    mediaRecorder.start();
   }
 
   function stopRecording() {
-    setIsRecording(false);
     mediaRecorder?.stop();
+    setMediaRecorder(undefined);
   }
 
   function playAudio() {
@@ -56,11 +50,14 @@ function App() {
       <img src="/dog.png" />
       <Title>Insert your command</Title>
       <Box sx={{ width: "500px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-        {isRecording ? <button onClick={stopRecording}>Stop</button> : <button onClick={startRecording}>Record</button>}
-        <input type="file" accept="audio/*" />
+        {mediaRecorder ? (
+          <button onClick={stopRecording}>Stop</button>
+        ) : (
+          <button onClick={startRecording}>Record</button>
+        )}
+        {audioBlob && <button onClick={playAudio}>Play audio</button>}
         <button>Translate to text</button>
       </Box>
-      {audioBlob && <button onClick={playAudio}>Play audio</button>}
       <StyledForm onSubmit={onSubmit}>
         <TextField
           label="Query"
