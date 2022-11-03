@@ -1,10 +1,30 @@
 import styled from "@emotion/styled";
 import { Box, TextField } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function App() {
   const [textQuery, setTextQuery] = useState("");
   const [result, setResult] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
+  const [audioBlob, setAudioBlob] = useState<Blob>();
+
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      const newMediaRecorder = new MediaRecorder(stream);
+
+      const audioChunks = [] as Blob[];
+      newMediaRecorder.addEventListener("dataavailable", (event) => {
+        audioChunks.push(event.data);
+      });
+
+      newMediaRecorder.addEventListener("stop", () => {
+        setAudioBlob(new Blob(audioChunks));
+      });
+
+      setMediaRecorder(newMediaRecorder);
+    });
+  }, []);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -12,15 +32,35 @@ function App() {
     setTextQuery("");
   }
 
+  function startRecording() {
+    if (!mediaRecorder) return;
+    setIsRecording(true);
+    setAudioBlob(undefined);
+    mediaRecorder.start();
+  }
+
+  function stopRecording() {
+    setIsRecording(false);
+    mediaRecorder?.stop();
+  }
+
+  function playAudio() {
+    if (!audioBlob) return;
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play();
+  }
+
   return (
     <Main>
       <img src="/dog.png" />
       <Title>Insert your command</Title>
       <Box sx={{ width: "500px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-        <button>Record</button>
+        {isRecording ? <button onClick={stopRecording}>Stop</button> : <button onClick={startRecording}>Record</button>}
         <input type="file" accept="audio/*" />
         <button>Translate to text</button>
       </Box>
+      {audioBlob && <button onClick={playAudio}>Play audio</button>}
       <StyledForm onSubmit={onSubmit}>
         <TextField
           label="Query"
