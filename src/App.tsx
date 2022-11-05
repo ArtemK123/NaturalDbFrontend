@@ -38,13 +38,6 @@ function App() {
     setMediaRecorder(undefined);
   }
 
-  function playAudio() {
-    if (!audioBlob) return;
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    audio.play();
-  }
-
   return (
     <Main>
       <img src="/dog.png" />
@@ -55,12 +48,12 @@ function App() {
         ) : (
           <button onClick={startRecording}>Record</button>
         )}
-        {audioBlob && <button onClick={playAudio}>Play audio</button>}
         <button>Translate to text</button>
       </Box>
+      {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
       <StyledForm onSubmit={onSubmit}>
         <TextField
-          label="Query"
+          label="Input"
           sx={{ marginY: "20px" }}
           multiline
           maxRows={4}
