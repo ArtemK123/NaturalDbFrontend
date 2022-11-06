@@ -1,45 +1,12 @@
-import { IconButton, styled, Tab, Tabs, TextField } from "@mui/material";
-import { useState } from "react";
+import { Button, IconButton, styled, Tab, Tabs, TextField } from "@mui/material";
+import { useEffect, useState } from "react";
 import { Colors } from "./colors";
 import MicIcon from "@mui/icons-material/Mic";
 import StopCircleIcon from "@mui/icons-material/StopCircle";
+import { config } from "./config";
+import { text } from "stream/consumers";
 
 function App() {
-  const [textQuery, setTextQuery] = useState("");
-  const [result, setResult] = useState("");
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
-  const [audioBlob, setAudioBlob] = useState<Blob>();
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setResult("Your query is: " + textQuery);
-    setTextQuery("");
-  }
-
-  function startRecording() {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      const newMediaRecorder = new MediaRecorder(stream);
-
-      const audioChunks = [] as Blob[];
-      newMediaRecorder.addEventListener("dataavailable", (event) => {
-        audioChunks.push(event.data);
-      });
-
-      newMediaRecorder.addEventListener("stop", () => {
-        setAudioBlob(new Blob(audioChunks));
-      });
-
-      setMediaRecorder(newMediaRecorder);
-      setAudioBlob(undefined);
-      newMediaRecorder.start();
-    });
-  }
-
-  function stopRecording() {
-    mediaRecorder?.stop();
-    setMediaRecorder(undefined);
-  }
-
   const [state, setState] = useState(States.NaturalLanguageQuery);
   const [formalQuery, setFormalQuery] = useState<string>("");
   const [queryResult, setQueryResult] = useState<string>("");
@@ -64,36 +31,6 @@ function App() {
       {state === States.QueryResult && <QueryResultView result={queryResult} />}
     </Main>
   );
-
-  // return (
-  //   <Main>
-  //     <img src="/dog.png" />
-  //     <Title>Natural Db</Title>
-  //     <Box sx={{ width: "500px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-  //       {mediaRecorder ? (
-  //         <button onClick={stopRecording}>Stop</button>
-  //       ) : (
-  //         <button onClick={startRecording}>Record</button>
-  //       )}
-  //       <button>Translate to text</button>
-  //     </Box>
-  //     {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
-  //     <StyledForm onSubmit={onSubmit}>
-  //       <TextField
-  //         label="Input"
-  //         sx={{ marginY: "20px" }}
-  //         multiline
-  //         maxRows={4}
-  //         value={textQuery}
-  //         onChange={(e) => setTextQuery(e.target.value)}
-  //       />
-  //       <Button type="submit" variant="contained">
-  //         Send
-  //       </Button>
-  //     </StyledForm>
-  //     <div>{result}</div>
-  //   </Main>
-  // );
 }
 
 function NaturalLanguageQueryView({ callback }: { callback: (formalQuery: string) => void }) {
@@ -119,19 +56,50 @@ function TextQueryInputView({ callback }: { callback: (formalQuery: string) => v
 
   return (
     <>
-      <TextField label="Your command" value={textQuery} onChange={(e) => setTextQuery(e.target.value)} />
-      <button onClick={onSubmit}>Generate formal query</button>
+      <TextField
+        multiline
+        sx={{ width: "600px" }}
+        label="Your query"
+        value={textQuery}
+        onChange={(e) => setTextQuery(e.target.value)}
+      />
+      <button onClick={onSubmit} disabled={!textQuery}>
+        Generate formal query
+      </button>
     </>
   );
 
   function onSubmit() {
-    callback("SELECT * FROM test;");
+    fetch(config.backendUrl + "/text-to-command", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: textQuery }),
+    })
+      .then((response) => response.text())
+      .then(callback)
+      .catch((error) => console.error(error));
   }
 }
 
 function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => void }) {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
+  const [textQuery, setTextQuery] = useState<string>();
+
+  useEffect(() => {
+    if (!audioBlob) return;
+
+    setTextQuery(undefined);
+    const form = new FormData();
+    form.append("file", audioBlob, "audio.ogg");
+    fetch(config.backendUrl + "/audio-to-text", {
+      method: "POST",
+      body: form,
+    })
+      .then((response) => response.text())
+      .then(setTextQuery)
+      .catch((error) => console.error(error));
+  }, [audioBlob]);
 
   return (
     <>
@@ -147,7 +115,10 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
       )}
 
       {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
-      <button onClick={onSubmit}>Generate formal query</button>
+      {textQuery && <TextField label="Your command" value={textQuery} onChange={(e) => setTextQuery(e.target.value)} />}
+      <Button onClick={onSubmit} disabled={!textQuery}>
+        Generate formal query
+      </Button>
     </>
   );
 
@@ -176,7 +147,14 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
   }
 
   function onSubmit() {
-    callback("SELECT * FROM test;");
+    fetch(config.backendUrl + "/text-to-command", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: textQuery }),
+    })
+      .then((response) => response.text())
+      .then(callback)
+      .catch((error) => console.error(error));
   }
 }
 
