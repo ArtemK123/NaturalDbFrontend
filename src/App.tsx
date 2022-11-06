@@ -1,6 +1,8 @@
-import { Box, Button, styled, Tab, Tabs, TextField } from "@mui/material";
+import { IconButton, styled, Tab, Tabs, TextField } from "@mui/material";
 import { useState } from "react";
 import { Colors } from "./colors";
+import MicIcon from "@mui/icons-material/Mic";
+import StopCircleIcon from "@mui/icons-material/StopCircle";
 
 function App() {
   const [textQuery, setTextQuery] = useState("");
@@ -106,12 +108,76 @@ function NaturalLanguageQueryView({ callback }: { callback: (formalQuery: string
         <Tab label="By voice" />
       </Tabs>
 
-      {inputType === NaturalLanguageInputTypes.Text && <p>Text input</p>}
-      {inputType === NaturalLanguageInputTypes.Voice && <p>Voice input</p>}
-
-      <button onClick={() => callback("SELECT * FROM test;")}>Generate formal query</button>
+      {inputType === NaturalLanguageInputTypes.Text && <TextQueryInputView callback={callback} />}
+      {inputType === NaturalLanguageInputTypes.Voice && <AudioQueryInputView callback={callback} />}
     </>
   );
+}
+
+function TextQueryInputView({ callback }: { callback: (formalQuery: string) => void }) {
+  const [textQuery, setTextQuery] = useState("");
+
+  return (
+    <>
+      <TextField label="Your command" value={textQuery} onChange={(e) => setTextQuery(e.target.value)} />
+      <button onClick={onSubmit}>Generate formal query</button>
+    </>
+  );
+
+  function onSubmit() {
+    callback("SELECT * FROM test;");
+  }
+}
+
+function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => void }) {
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
+  const [audioBlob, setAudioBlob] = useState<Blob>();
+
+  return (
+    <>
+      <p>Record your query</p>
+      {mediaRecorder ? (
+        <IconButton onClick={() => stopRecording()}>
+          <StopCircleIcon />
+        </IconButton>
+      ) : (
+        <IconButton onClick={() => startRecording()}>
+          <MicIcon />
+        </IconButton>
+      )}
+
+      {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
+      <button onClick={onSubmit}>Generate formal query</button>
+    </>
+  );
+
+  function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      const newMediaRecorder = new MediaRecorder(stream);
+
+      const audioChunks = [] as Blob[];
+      newMediaRecorder.addEventListener("dataavailable", (event) => {
+        audioChunks.push(event.data);
+      });
+
+      newMediaRecorder.addEventListener("stop", () => {
+        setAudioBlob(new Blob(audioChunks, { type: "audio/ogg; codecs=opus" }));
+      });
+
+      setMediaRecorder(newMediaRecorder);
+      setAudioBlob(undefined);
+      newMediaRecorder.start();
+    });
+  }
+
+  function stopRecording() {
+    mediaRecorder?.stop();
+    setMediaRecorder(undefined);
+  }
+
+  function onSubmit() {
+    callback("SELECT * FROM test;");
+  }
 }
 
 function FormalQueryView({ query, callback }: { query: string; callback: (queryResult: string) => void }) {
@@ -160,12 +226,6 @@ const Title = styled("h3")({
   fontWeight: "bold",
   color: Colors.Black,
   margin: "16px 0 40px",
-});
-
-const StyledForm = styled("form")({
-  display: "flex",
-  flexDirection: "column",
-  width: "500px",
 });
 
 export default App;
