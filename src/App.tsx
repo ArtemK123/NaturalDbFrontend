@@ -86,20 +86,20 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [textQuery, setTextQuery] = useState<string>();
 
-  useEffect(() => {
-    if (!audioBlob) return;
+  // useEffect(() => {
+  //   if (!audioBlob) return;
 
-    setTextQuery(undefined);
-    const form = new FormData();
-    form.append("file", audioBlob, "audio.ogg");
-    fetch(config.backendUrl + "/audio-to-text", {
-      method: "POST",
-      body: form,
-    })
-      .then((response) => response.text())
-      .then(setTextQuery)
-      .catch((error) => console.error(error));
-  }, [audioBlob]);
+  //   setTextQuery(undefined);
+  //   const form = new FormData();
+  //   form.append("file", audioBlob, "audio.wav");
+  //   fetch(config.backendUrl + "/audio-to-text", {
+  //     method: "POST",
+  //     body: form,
+  //   })
+  //     .then((response) => response.text())
+  //     .then(setTextQuery)
+  //     .catch((error) => console.error(error));
+  // }, [audioBlob]);
 
   return (
     <>
@@ -115,7 +115,15 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
       )}
 
       {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
-      {textQuery && <TextField label="Your command" value={textQuery} onChange={(e) => setTextQuery(e.target.value)} />}
+      {textQuery && (
+        <TextField
+          multiline
+          sx={{ width: "600px" }}
+          label="Your query"
+          value={textQuery}
+          onChange={(e) => setTextQuery(e.target.value)}
+        />
+      )}
       <Button onClick={onSubmit} disabled={!textQuery}>
         Generate formal query
       </Button>
@@ -124,7 +132,7 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
 
   function startRecording() {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      const newMediaRecorder = new MediaRecorder(stream);
+      const newMediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
 
       const audioChunks = [] as Blob[];
       newMediaRecorder.addEventListener("dataavailable", (event) => {
@@ -132,8 +140,11 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
       });
 
       newMediaRecorder.addEventListener("stop", () => {
-        setAudioBlob(new Blob(audioChunks, { type: "audio/ogg; codecs=opus" }));
+        // TODO: Find a way to save it in wav format
+        setAudioBlob(new Blob(audioChunks, { type: "audio/webm" }));
       });
+
+      console.log(newMediaRecorder.mimeType);
 
       setMediaRecorder(newMediaRecorder);
       setAudioBlob(undefined);
