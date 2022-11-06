@@ -1,4 +1,4 @@
-import { Box, Button, styled, TextField } from "@mui/material";
+import { Box, Button, styled, Tab, Tabs, TextField } from "@mui/material";
 import { useState } from "react";
 import { Colors } from "./colors";
 
@@ -100,28 +100,18 @@ function NaturalLanguageQueryView({ callback }: { callback: (formalQuery: string
   return (
     <>
       <Title>Provide your command</Title>
-      <div>
-        <Button
-          variant={computeInputTypeButtonVariant(NaturalLanguageInputTypes.Text)}
-          onClick={() => setInputType(NaturalLanguageInputTypes.Text)}
-        >
-          By text
-        </Button>{" "}
-        or{" "}
-        <Button
-          variant={computeInputTypeButtonVariant(NaturalLanguageInputTypes.Voice)}
-          onClick={() => setInputType(NaturalLanguageInputTypes.Voice)}
-        >
-          By voice
-        </Button>
-      </div>
+
+      <Tabs value={inputType} onChange={(_, newType: NaturalLanguageInputTypes) => setInputType(newType)}>
+        <Tab label="By text" />
+        <Tab label="By voice" />
+      </Tabs>
+
+      {inputType === NaturalLanguageInputTypes.Text && <p>Text input</p>}
+      {inputType === NaturalLanguageInputTypes.Voice && <p>Voice input</p>}
+
       <button onClick={() => callback("SELECT * FROM test;")}>Generate formal query</button>
     </>
   );
-
-  function computeInputTypeButtonVariant(buttonType: NaturalLanguageInputTypes) {
-    return inputType === buttonType ? "contained" : "outlined";
-  }
 }
 
 function FormalQueryView({ query, callback }: { query: string; callback: (queryResult: string) => void }) {
