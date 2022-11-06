@@ -1,6 +1,7 @@
-import styled from "@emotion/styled";
-import { Box, TextField } from "@mui/material";
+import { Box, Button, styled, TextField, ThemeProvider } from "@mui/material";
 import { useState } from "react";
+import { Colors } from "./colors";
+import { theme } from "./theme";
 
 function App() {
   const [textQuery, setTextQuery] = useState("");
@@ -39,31 +40,35 @@ function App() {
   }
 
   return (
-    <Main>
-      <img src="/dog.png" />
-      <Title>Insert your command</Title>
-      <Box sx={{ width: "500px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-        {mediaRecorder ? (
-          <button onClick={stopRecording}>Stop</button>
-        ) : (
-          <button onClick={startRecording}>Record</button>
-        )}
-        <button>Translate to text</button>
-      </Box>
-      {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
-      <StyledForm onSubmit={onSubmit}>
-        <TextField
-          label="Input"
-          sx={{ marginY: "20px" }}
-          multiline
-          maxRows={4}
-          value={textQuery}
-          onChange={(e) => setTextQuery(e.target.value)}
-        />
-        <SubmitInput type="submit" value="Send " />
-      </StyledForm>
-      <div>{result}</div>
-    </Main>
+    <ThemeProvider theme={theme}>
+      <Main>
+        <img src="/dog.png" />
+        <Title>Insert your command</Title>
+        <Box sx={{ width: "500px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+          {mediaRecorder ? (
+            <button onClick={stopRecording}>Stop</button>
+          ) : (
+            <button onClick={startRecording}>Record</button>
+          )}
+          <button>Translate to text</button>
+        </Box>
+        {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
+        <StyledForm onSubmit={onSubmit}>
+          <TextField
+            label="Input"
+            sx={{ marginY: "20px" }}
+            multiline
+            maxRows={4}
+            value={textQuery}
+            onChange={(e) => setTextQuery(e.target.value)}
+          />
+          <Button type="submit" variant="contained">
+            Send
+          </Button>
+        </StyledForm>
+        <div>{result}</div>
+      </Main>
+    </ThemeProvider>
   );
 }
 
@@ -78,7 +83,7 @@ const Title = styled("h3")({
   fontSize: "32px",
   lineHeight: "40px",
   fontWeight: "bold",
-  color: "#202123",
+  color: Colors.Black,
   margin: "16px 0 40px",
 });
 
@@ -86,26 +91,6 @@ const StyledForm = styled("form")({
   display: "flex",
   flexDirection: "column",
   width: "500px",
-});
-
-const StyledInput = styled("input")({
-  fontSize: "16px",
-  lineHeight: "24px",
-  color: "#353740",
-  "&::placeholder": {
-    color: "#8e8ea0",
-    opacity: 1,
-  },
-});
-
-const SubmitInput = styled(StyledInput)({
-  padding: "12px 0",
-  color: "#fff",
-  backgroundColor: "#10a37f",
-  border: "none",
-  borderRadius: "4px",
-  textAlign: "center",
-  cursor: "pointer",
 });
 
 export default App;
