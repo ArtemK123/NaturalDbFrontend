@@ -1,10 +1,10 @@
 import { Button, IconButton, styled, Tab, Tabs, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Colors } from "./colors";
 import MicIcon from "@mui/icons-material/Mic";
 import StopCircleIcon from "@mui/icons-material/StopCircle";
 import { config } from "./config";
-import { text } from "stream/consumers";
+import Recorder from "recorder-js";
 
 function App() {
   const [state, setState] = useState(States.NaturalLanguageQuery);
@@ -82,29 +82,14 @@ function TextQueryInputView({ callback }: { callback: (formalQuery: string) => v
 }
 
 function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => void }) {
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder>();
+  const [recorder, setRecorder] = useState<Recorder>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [textQuery, setTextQuery] = useState<string>();
-
-  // useEffect(() => {
-  //   if (!audioBlob) return;
-
-  //   setTextQuery(undefined);
-  //   const form = new FormData();
-  //   form.append("file", audioBlob, "audio.wav");
-  //   fetch(config.backendUrl + "/audio-to-text", {
-  //     method: "POST",
-  //     body: form,
-  //   })
-  //     .then((response) => response.text())
-  //     .then(setTextQuery)
-  //     .catch((error) => console.error(error));
-  // }, [audioBlob]);
 
   return (
     <>
       <p>Record your query</p>
-      {mediaRecorder ? (
+      {recorder ? (
         <IconButton onClick={() => stopRecording()}>
           <StopCircleIcon />
         </IconButton>
@@ -115,6 +100,7 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
       )}
 
       {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)}></audio>}
+      <Button onClick={transformAudioToTextQuery}>Transform audio to text query</Button>
       {textQuery && (
         <TextField
           multiline
@@ -132,29 +118,36 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
 
   function startRecording() {
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      const newMediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
-      const audioChunks = [] as Blob[];
-      newMediaRecorder.addEventListener("dataavailable", (event) => {
-        audioChunks.push(event.data);
-      });
-
-      newMediaRecorder.addEventListener("stop", () => {
-        // TODO: Find a way to save it in wav format
-        setAudioBlob(new Blob(audioChunks, { type: "audio/webm" }));
-      });
-
-      console.log(newMediaRecorder.mimeType);
-
-      setMediaRecorder(newMediaRecorder);
+      const newRecorder = new Recorder(new AudioContext());
+      newRecorder.init(stream);
+      newRecorder.start();
       setAudioBlob(undefined);
-      newMediaRecorder.start();
+      setTextQuery(undefined);
+      setRecorder(newRecorder);
     });
   }
 
   function stopRecording() {
-    mediaRecorder?.stop();
-    setMediaRecorder(undefined);
+    if (!recorder) return;
+
+    recorder.stop().then(({ blob }) => {
+      setRecorder(undefined);
+      setAudioBlob(new Blob([blob], { type: "audio/wav" }));
+    });
+  }
+
+  function transformAudioToTextQuery() {
+    if (!audioBlob) return;
+    setTextQuery(undefined);
+    const form = new FormData();
+    form.append("file", audioBlob, "audio.wav");
+    fetch(config.backendUrl + "/audio-to-text", {
+      method: "POST",
+      body: form,
+    })
+      .then((response) => response.text())
+      .then(setTextQuery)
+      .catch((error) => console.error(error));
   }
 
   function onSubmit() {
