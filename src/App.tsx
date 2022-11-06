@@ -43,7 +43,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <Main>
         <img src="/dog.png" />
-        <Title>Insert your command</Title>
+        <Title></Title>
         <Box sx={{ width: "500px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
           {mediaRecorder ? (
             <button onClick={stopRecording}>Stop</button>
