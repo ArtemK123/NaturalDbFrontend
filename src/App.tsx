@@ -24,6 +24,7 @@ function App() {
   return (
     <Main>
       <img src="/dog.png" />
+      <SiteTitle>Natural interface to your Db</SiteTitle>
       <Tabs value={state} onChange={(_, newState: States) => setState(newState)}>
         <Tab label="Natural language command" />
         <Tab label="Formal query" disabled={formalQuery === undefined} />
@@ -57,7 +58,7 @@ function NaturalLanguageQueryView({
     <>
       {isShown && (
         <>
-          <Title>Provide your command</Title>
+          <StateTabTitle>Provide your command</StateTabTitle>
           <Tabs value={inputType} onChange={(_, newType: NaturalLanguageInputTypes) => setInputType(newType)}>
             <Tab label="By text" />
             <Tab label="By voice" />
@@ -201,7 +202,7 @@ function FormalQueryView({
 
   return (
     <>
-      <Title>Your query is:</Title>
+      <StateTabTitle>Your query is:</StateTabTitle>
       <TextField
         multiline
         sx={{ width: "600px" }}
@@ -220,7 +221,7 @@ function QueryResultView({ isShown, result }: { isShown: boolean; result: string
 
   return (
     <>
-      <Title>Result:</Title>
+      <StateTabTitle>Result:</StateTabTitle>
       <textarea readOnly>{result}</textarea>
     </>
   );
@@ -245,7 +246,15 @@ const Main = styled("div")({
   paddingTop: "60px",
 });
 
-const Title = styled("h4")({
+const SiteTitle = styled("h3")({
+  fontSize: "32px",
+  lineHeight: "40px",
+  fontWeight: "bold",
+  color: Colors.Black,
+  margin: "12px 0 40px",
+});
+
+const StateTabTitle = styled("h4")({
   fontSize: "26px",
   lineHeight: "30px",
   fontWeight: "bold",
