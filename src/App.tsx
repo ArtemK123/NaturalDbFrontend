@@ -26,8 +26,8 @@ function App() {
       <img src="/dog.png" />
       <Tabs value={state} onChange={(_, newState: States) => setState(newState)}>
         <Tab label="Natural language command" />
-        <Tab label="Formal query" disabled={!formalQuery} />
-        <Tab label="Query results" disabled={!queryResult} />
+        <Tab label="Formal query" disabled={formalQuery === undefined} />
+        <Tab label="Query results" disabled={queryResult === undefined} />
       </Tabs>
       <NaturalLanguageQueryView
         isShown={state === States.NaturalLanguageQuery}
@@ -35,6 +35,7 @@ function App() {
       />
       <FormalQueryView
         isShown={state === States.FormalQuery}
+        setQuery={setFormalQuery}
         query={formalQuery ?? ""}
         callback={formalQueryViewCallback}
       />
@@ -52,32 +53,26 @@ function NaturalLanguageQueryView({
 }) {
   const [inputType, setInputType] = useState(NaturalLanguageInputTypes.Text);
 
-  if (!isShown) {
-    return (
-      <>
-        <TextQueryInputView isShown={false} callback={callback} />
-        <AudioQueryInputView isShown={false} callback={callback} />
-      </>
-    );
-  }
-
   return (
     <>
-      <Title>Provide your command</Title>
+      {isShown && (
+        <>
+          <Title>Provide your command</Title>
+          <Tabs value={inputType} onChange={(_, newType: NaturalLanguageInputTypes) => setInputType(newType)}>
+            <Tab label="By text" />
+            <Tab label="By voice" />
+          </Tabs>
+        </>
+      )}
 
-      <Tabs value={inputType} onChange={(_, newType: NaturalLanguageInputTypes) => setInputType(newType)}>
-        <Tab label="By text" />
-        <Tab label="By voice" />
-      </Tabs>
-
-      <TextQueryInputView isShown={inputType === NaturalLanguageInputTypes.Text} callback={callback} />
-      <AudioQueryInputView isShown={inputType === NaturalLanguageInputTypes.Voice} callback={callback} />
+      <TextQueryInputView isShown={isShown && inputType === NaturalLanguageInputTypes.Text} callback={callback} />
+      <AudioQueryInputView isShown={isShown && inputType === NaturalLanguageInputTypes.Voice} callback={callback} />
     </>
   );
 }
 
 function TextQueryInputView({ isShown, callback }: { isShown: boolean; callback: (formalQuery: string) => void }) {
-  const [textQuery, setTextQuery] = useState("");
+  const [textQuery, setTextQuery] = useState<string>();
 
   if (!isShown) return null;
 
@@ -87,7 +82,7 @@ function TextQueryInputView({ isShown, callback }: { isShown: boolean; callback:
         multiline
         sx={{ width: "600px" }}
         label="Your query"
-        value={textQuery}
+        value={textQuery ?? ""}
         onChange={(e) => setTextQuery(e.target.value)}
       />
       <button onClick={onSubmit} disabled={!textQuery}>
@@ -194,13 +189,14 @@ function AudioQueryInputView({ isShown, callback }: { isShown: boolean; callback
 function FormalQueryView({
   isShown,
   query,
+  setQuery,
   callback,
 }: {
   isShown: boolean;
   query: string;
+  setQuery: (newFormalQuery: string) => void;
   callback: (queryResult: string) => void;
 }) {
-  const [formalQuery, setFormalQuery] = useState(query);
   if (!isShown) return null;
 
   return (
@@ -209,9 +205,9 @@ function FormalQueryView({
       <TextField
         multiline
         sx={{ width: "600px" }}
-        label="Your query"
-        value={formalQuery}
-        onChange={(e) => setFormalQuery(e.target.value)}
+        label="Formal query"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
       />
 
       <button onClick={() => callback("TestValue1, TestValue2")}>Send</button>
