@@ -8,8 +8,8 @@ import Recorder from "recorder-js";
 
 function App() {
   const [state, setState] = useState(States.NaturalLanguageQuery);
-  const [formalQuery, setFormalQuery] = useState<string>("");
-  const [queryResult, setQueryResult] = useState<string>("");
+  const [formalQuery, setFormalQuery] = useState<string>();
+  const [queryResult, setQueryResult] = useState<string>();
 
   const naturalLanguageQueryViewCallback = (newFormalQuery: string) => {
     setState(States.FormalQuery);
@@ -24,17 +24,42 @@ function App() {
   return (
     <Main>
       <img src="/dog.png" />
-      {state === States.NaturalLanguageQuery && (
-        <NaturalLanguageQueryView callback={naturalLanguageQueryViewCallback} />
-      )}
-      {state === States.FormalQuery && <FormalQueryView query={formalQuery} callback={formalQueryViewCallback} />}
-      {state === States.QueryResult && <QueryResultView result={queryResult} />}
+      <Tabs value={state} onChange={(_, newState: States) => setState(newState)}>
+        <Tab label="Natural language command" />
+        <Tab label="Formal query" disabled={!formalQuery} />
+        <Tab label="Query results" disabled={!queryResult} />
+      </Tabs>
+      <NaturalLanguageQueryView
+        isShown={state === States.NaturalLanguageQuery}
+        callback={naturalLanguageQueryViewCallback}
+      />
+      <FormalQueryView
+        isShown={state === States.FormalQuery}
+        query={formalQuery ?? ""}
+        callback={formalQueryViewCallback}
+      />
+      <QueryResultView isShown={state === States.QueryResult} result={queryResult ?? ""} />
     </Main>
   );
 }
 
-function NaturalLanguageQueryView({ callback }: { callback: (formalQuery: string) => void }) {
+function NaturalLanguageQueryView({
+  isShown,
+  callback,
+}: {
+  isShown: boolean;
+  callback: (formalQuery: string) => void;
+}) {
   const [inputType, setInputType] = useState(NaturalLanguageInputTypes.Text);
+
+  if (!isShown) {
+    return (
+      <>
+        <TextQueryInputView isShown={false} callback={callback} />
+        <AudioQueryInputView isShown={false} callback={callback} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -45,14 +70,16 @@ function NaturalLanguageQueryView({ callback }: { callback: (formalQuery: string
         <Tab label="By voice" />
       </Tabs>
 
-      {inputType === NaturalLanguageInputTypes.Text && <TextQueryInputView callback={callback} />}
-      {inputType === NaturalLanguageInputTypes.Voice && <AudioQueryInputView callback={callback} />}
+      <TextQueryInputView isShown={inputType === NaturalLanguageInputTypes.Text} callback={callback} />
+      <AudioQueryInputView isShown={inputType === NaturalLanguageInputTypes.Voice} callback={callback} />
     </>
   );
 }
 
-function TextQueryInputView({ callback }: { callback: (formalQuery: string) => void }) {
+function TextQueryInputView({ isShown, callback }: { isShown: boolean; callback: (formalQuery: string) => void }) {
   const [textQuery, setTextQuery] = useState("");
+
+  if (!isShown) return null;
 
   return (
     <>
@@ -76,15 +103,17 @@ function TextQueryInputView({ callback }: { callback: (formalQuery: string) => v
       body: JSON.stringify({ text: textQuery }),
     })
       .then((response) => response.text())
-      .then(callback)
+      .then((command) => callback(command.trim()))
       .catch((error) => console.error(error));
   }
 }
 
-function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => void }) {
+function AudioQueryInputView({ isShown, callback }: { isShown: boolean; callback: (formalQuery: string) => void }) {
   const [recorder, setRecorder] = useState<Recorder>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [textQuery, setTextQuery] = useState<string>();
+
+  if (!isShown) return null;
 
   return (
     <>
@@ -157,22 +186,42 @@ function AudioQueryInputView({ callback }: { callback: (formalQuery: string) => 
       body: JSON.stringify({ text: textQuery }),
     })
       .then((response) => response.text())
-      .then(callback)
+      .then((command) => callback(command.trim()))
       .catch((error) => console.error(error));
   }
 }
 
-function FormalQueryView({ query, callback }: { query: string; callback: (queryResult: string) => void }) {
+function FormalQueryView({
+  isShown,
+  query,
+  callback,
+}: {
+  isShown: boolean;
+  query: string;
+  callback: (queryResult: string) => void;
+}) {
+  const [formalQuery, setFormalQuery] = useState(query);
+  if (!isShown) return null;
+
   return (
     <>
       <Title>Your query is:</Title>
-      <textarea>{query}</textarea>
+      <TextField
+        multiline
+        sx={{ width: "600px" }}
+        label="Your query"
+        value={formalQuery}
+        onChange={(e) => setFormalQuery(e.target.value)}
+      />
+
       <button onClick={() => callback("TestValue1, TestValue2")}>Send</button>
     </>
   );
 }
 
-function QueryResultView({ result }: { result: string }) {
+function QueryResultView({ isShown, result }: { isShown: boolean; result: string }) {
+  if (!isShown) return null;
+
   return (
     <>
       <Title>Result:</Title>
@@ -183,9 +232,7 @@ function QueryResultView({ result }: { result: string }) {
 
 enum States {
   NaturalLanguageQuery,
-  LoadFormalQuery,
   FormalQuery,
-  LoadQueryResult,
   QueryResult,
   Error,
 }
@@ -202,12 +249,12 @@ const Main = styled("div")({
   paddingTop: "60px",
 });
 
-const Title = styled("h3")({
-  fontSize: "32px",
-  lineHeight: "40px",
+const Title = styled("h4")({
+  fontSize: "26px",
+  lineHeight: "30px",
   fontWeight: "bold",
   color: Colors.Black,
-  margin: "16px 0 40px",
+  margin: "40px 0 40px",
 });
 
 export default App;
