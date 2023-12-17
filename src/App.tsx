@@ -86,9 +86,9 @@ function TextQueryInputView({ isShown, callback }: { isShown: boolean; callback:
         value={textQuery ?? ""}
         onChange={(e) => setTextQuery(e.target.value)}
       />
-      <button onClick={onSubmit} disabled={!textQuery}>
+      <Button sx={{ marginTop: "10px" }} onClick={onSubmit} disabled={!textQuery}>
         Generate formal query
-      </button>
+      </Button>
     </>
   );
 
@@ -211,7 +211,31 @@ function FormalQueryView({
         onChange={(e) => setQuery(e.target.value)}
       />
 
-      <button onClick={() => callback("TestValue1, TestValue2")}>Send</button>
+      <Button
+        sx={{ marginTop: "10px" }}
+        onClick={() =>
+          callback(
+            JSON.stringify([
+              {
+                id: 1,
+                color: "green",
+                manufacturer: "Dell",
+                price: "1000$",
+                url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxNlPtUBw3JKVM61WrItJUPVAduTAQ9uBJ7NuaZ5pWRQ&s",
+              },
+              {
+                id: 5,
+                color: "green",
+                manufacturer: "Dell",
+                price: "2000$",
+                url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJ3lK0gsc8lx1o90FNozLs7EYaOz-q9lgA6T_4K-IUYA&s",
+              },
+            ])
+          )
+        }
+      >
+        Send
+      </Button>
     </>
   );
 }
@@ -222,7 +246,7 @@ function QueryResultView({ isShown, result }: { isShown: boolean; result: string
   return (
     <>
       <StateTabTitle>Result:</StateTabTitle>
-      <textarea readOnly>{result}</textarea>
+      <TextField sx={{ width: "600px" }} multiline value={result} />
     </>
   );
 }
