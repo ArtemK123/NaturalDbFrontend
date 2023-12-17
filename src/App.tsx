@@ -48,10 +48,10 @@ function App() {
 function NaturalLanguageQueryView({
   isShown,
   callback,
-}: {
+}: Readonly<{
   isShown: boolean;
   callback: (formalQuery: string) => void;
-}) {
+}>) {
   const [inputType, setInputType] = useState(NaturalLanguageInputTypes.Text);
 
   return (
@@ -72,39 +72,29 @@ function NaturalLanguageQueryView({
   );
 }
 
-function TextQueryInputView({ isShown, callback }: { isShown: boolean; callback: (formalQuery: string) => void }) {
+function TextQueryInputView({ isShown, callback }: Readonly<{ isShown: boolean; callback: (sql: string) => void }>) {
   const [textQuery, setTextQuery] = useState<string>();
 
   if (!isShown) return null;
 
+  const text = textQuery ?? "";
   return (
     <>
       <TextField
         multiline
         sx={{ width: "600px" }}
         label="Your query"
-        value={textQuery ?? ""}
+        value={text}
         onChange={(e) => setTextQuery(e.target.value)}
       />
-      <Button sx={{ marginTop: "10px" }} onClick={onSubmit} disabled={!textQuery}>
+      <Button sx={{ marginTop: "10px" }} onClick={() => convertTextToSql(text, callback)} disabled={!textQuery}>
         Generate formal query
       </Button>
     </>
   );
-
-  function onSubmit() {
-    fetch(config.backendUrl + "/text-to-command", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: textQuery }),
-    })
-      .then((response) => response.text())
-      .then((command) => callback(command.trim()))
-      .catch((error) => console.error(error));
-  }
 }
 
-function AudioQueryInputView({ isShown, callback }: { isShown: boolean; callback: (formalQuery: string) => void }) {
+function AudioQueryInputView({ isShown, callback }: Readonly<{ isShown: boolean; callback: (sql: string) => void }>) {
   const [recorder, setRecorder] = useState<Recorder>();
   const [audioBlob, setAudioBlob] = useState<Blob>();
   const [textQuery, setTextQuery] = useState<string>();
@@ -135,7 +125,7 @@ function AudioQueryInputView({ isShown, callback }: { isShown: boolean; callback
           onChange={(e) => setTextQuery(e.target.value)}
         />
       )}
-      <Button onClick={onSubmit} disabled={!textQuery}>
+      <Button onClick={() => convertTextToSql(textQuery ?? "", callback)} disabled={!textQuery}>
         Generate formal query
       </Button>
     </>
@@ -170,20 +160,13 @@ function AudioQueryInputView({ isShown, callback }: { isShown: boolean; callback
       method: "POST",
       body: form,
     })
-      .then((response) => response.text())
-      .then(setTextQuery)
+      .then((response) => response.json() as Promise<IAudioToTextResponse>)
+      .then((response) => setTextQuery(response.text))
       .catch((error) => console.error(error));
   }
 
-  function onSubmit() {
-    fetch(config.backendUrl + "/text-to-command", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: textQuery }),
-    })
-      .then((response) => response.text())
-      .then((command) => callback(command.trim()))
-      .catch((error) => console.error(error));
+  interface IAudioToTextResponse {
+    text: string;
   }
 }
 
@@ -192,12 +175,12 @@ function FormalQueryView({
   query,
   setQuery,
   callback,
-}: {
+}: Readonly<{
   isShown: boolean;
   query: string;
   setQuery: (newFormalQuery: string) => void;
   callback: (queryResult: string) => void;
-}) {
+}>) {
   if (!isShown) return null;
 
   return (
@@ -211,36 +194,29 @@ function FormalQueryView({
         onChange={(e) => setQuery(e.target.value)}
       />
 
-      <Button
-        sx={{ marginTop: "10px" }}
-        onClick={() =>
-          callback(
-            JSON.stringify([
-              {
-                id: 1,
-                color: "green",
-                manufacturer: "Dell",
-                price: "1000$",
-                url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSxNlPtUBw3JKVM61WrItJUPVAduTAQ9uBJ7NuaZ5pWRQ&s",
-              },
-              {
-                id: 5,
-                color: "green",
-                manufacturer: "Dell",
-                price: "2000$",
-                url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJ3lK0gsc8lx1o90FNozLs7EYaOz-q9lgA6T_4K-IUYA&s",
-              },
-            ])
-          )
-        }
-      >
+      <Button sx={{ marginTop: "10px" }} onClick={() => executeFormalQuery()}>
         Send
       </Button>
     </>
   );
+
+  function executeFormalQuery() {
+    fetch(config.backendUrl + "/execute-in-big-query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sql: query }),
+    })
+      .then((response) => response.json() as Promise<IExecuteInBigQueryResponse>)
+      .then((result) => callback(result.resultsInCsv.length > 0 ? result.resultsInCsv : "No results"))
+      .catch((error) => console.error(error));
+  }
+
+  interface IExecuteInBigQueryResponse {
+    resultsInCsv: string;
+  }
 }
 
-function QueryResultView({ isShown, result }: { isShown: boolean; result: string }) {
+function QueryResultView({ isShown, result }: Readonly<{ isShown: boolean; result: string }>) {
   if (!isShown) return null;
 
   return (
@@ -249,6 +225,21 @@ function QueryResultView({ isShown, result }: { isShown: boolean; result: string
       <TextField sx={{ width: "600px" }} multiline value={result} />
     </>
   );
+}
+
+function convertTextToSql(text: string, callback: (sql: string) => void) {
+  fetch(config.backendUrl + "/text-to-sql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: text }),
+  })
+    .then((response) => response.json() as Promise<ITextToSqlResponse>)
+    .then((command) => callback(command.sql))
+    .catch((error) => console.error(error));
+}
+
+interface ITextToSqlResponse {
+  sql: string;
 }
 
 enum States {
